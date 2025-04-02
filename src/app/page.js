@@ -1,103 +1,197 @@
+"use client";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { IoTrashBinOutline } from "react-icons/io5";
+import { IoMdClose } from "react-icons/io";
+import { MdOutlineFileDownload } from "react-icons/md";
+import Link from "next/link";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  // Refs
+  const linkInputRef = useRef(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+  // States
+  const [generatingQRCode, setGeneratingQRCode] = useState(false);
+  const [QRcodeURL, setQRcodeURL] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [qrHistory, setQrHistory] = useState([]);
+  const [entriedLink, setEntriedLink] = useState("");
+
+  // Effects
+  useEffect(() => {
+    refreshHistory();
+  }, []);
+
+  // Functions
+  const generateQR = async (link) => {
+    if (!link) {
+      setErrorMessage("Please enter a valid link.");
+      return;
+    }
+    setGeneratingQRCode(true);
+    setEntriedLink(link);
+    setQRcodeURL(
+      `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${link}`
+    );
+    setGeneratingQRCode(false);
+
+    let isEntriedAlready = false;
+    qrHistory.forEach((entry) => {
+      let entryLink = new URL(entry);
+      entryLink = entryLink.searchParams.get("data");
+      if (entryLink === link) {
+        isEntriedAlready = true;
+      }
+    });
+
+    if (!isEntriedAlready) {
+      let localData = qrHistory;
+      localData.push(
+        `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${link}`
+      );
+      localStorage.setItem("qr_codes", JSON.stringify(localData));
+      refreshHistory();
+    }
+  };
+
+  const refreshHistory = () => {
+    let localData = localStorage.getItem("qr_codes");
+    setQrHistory(localData ? JSON.parse(localData) : []);
+  };
+
+  const removeFromHistory = (index) => {
+    let newHistory = qrHistory.filter((_, i) => i !== index);
+    localStorage.setItem("qr_codes", JSON.stringify(newHistory));
+    refreshHistory();
+  };
+
+  return (
+    <main className="w-full bg-gradient-to-br from-slate-100 to-slate-100 text-slate-700 font-medium text-sm px-3">
+      <section className="min-h-screen w-full max-w-xl mx-auto py-5 flex flex-col justify-center gap-3">
+        <div className="h-fit w-full rounded-sm border-[1px] border-slate-300 bg-slate-50 p-3">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Online QR Code Generator
+          </h1>
+          <div className="relative w-fit mx-auto">
+            {entriedLink && (
+              <Link
+                href={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${entriedLink}`}
+                target="_blank"
+                className="absolute bottom-6 -right-7 border-[1px] border-slate-300 rounded-sm"
+              >
+                <MdOutlineFileDownload className="text-xl text-slate-500" />
+              </Link>
+            )}
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              key={QRcodeURL}
+              src={
+                QRcodeURL ||
+                "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://shahsaminyasar.vercel.app"
+              }
+              width={150}
+              height={150}
+              alt={`QR Code`}
+              className={`block p-[6px] mt-5 mx-auto w-[150px] aspect-square rounded-sm bg-white border-[1px] border-slate-300 ${
+                QRcodeURL?.length > 0 ? "opacity-100" : "opacity-10"
+              }`}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <span className="block text-center text-xs font-medium text-slate-600 mt-2 mb-3">
+              {entriedLink}
+            </span>
+          </div>
+
+          {/* Link Input Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              generateQR(linkInputRef.current.value);
+            }}
+            className="w-full flex flex-row items-center gap-1"
           >
-            Read our docs
-          </a>
+            {/* Link Input */}
+            <input
+              ref={linkInputRef}
+              type="text"
+              placeholder="Put the link here"
+              className="w-full rounded-sm border-[1px] border-slate-300 px-2 py-1 text-sm outline-[0px] focus:border-slate-400"
+            />
+            {/* Generate QR Btn */}
+            <button
+              type="submit"
+              className="whitespace-nowrap px-2 py-1 bg-slate-900 text-slate-100 border-[1px] border-slate-900 rounded-sm text-sm cursor-pointer disabled:grayscale-[60%] disabled:opacity-50"
+              disabled={generatingQRCode}
+            >
+              {generatingQRCode ? "Generating code..." : "Generate QR Code"}
+            </button>
+          </form>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+
+        {/* History Section */}
+        <div className="w-full rounded-sm border-[1px] border-slate-300 bg-slate-50 p-3 border-b-[1px] border-b-slate-300">
+          {/* Section Title */}
+          <h3 className="block text-left text-lg font-semibold text-slate-900">
+            History
+          </h3>
+
+          <div className="flex flex-col-reverse w-full max-h-[30vh] overflow-y-auto">
+            {/* QR Code Rows */}
+            {qrHistory?.map((qrCode, index) => {
+              let urlObj = new URL(qrCode);
+              let qrLink = urlObj.searchParams.get("data");
+
+              return (
+                <div
+                  key={`${qrCode}_${index}`}
+                  className="flex flex-row justify-between items-center p-5 gap-5 text-slate-800 font-normal border-b-[1px] border-b-slate-300 first:border-b-[0px]"
+                >
+                  <button
+                    onClick={() => {
+                      removeFromHistory(index);
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <IoTrashBinOutline className="text-lg" />
+                  </button>
+                  <span className="w-full block text-left">{qrLink}</span>
+                  <Link
+                    href={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrLink}`}
+                    target="_blank"
+                  >
+                    <MdOutlineFileDownload className="text-xl text-slate-600" />
+                  </Link>
+                  <Image
+                    src={qrCode}
+                    height={40}
+                    width={40}
+                    alt={qrCode}
+                    className="block w-[40px] h-[40px] aspect-square object-contain"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {errorMessage && (
+        <span className="block w-full max-w-[400px] p-2 border-2 border-red-700 bg-red-500 text-red-900 text-shadow rounded-sm text-center mx-auto absolute bottom-5 left-[50%] -translate-x-[50%]">
+          <button onClick={() => setErrorMessage("")}>
+            <IoMdClose className="text-xl text-red-900 absolute top-[50%] left-3 -translate-y-[50%] cursor-pointer" />
+          </button>
+          {errorMessage}
+        </span>
+      )}
+
+      <span className="block py-3 text-center text-xs font-light text-slate-700">
+        Copyright 2025 &copy;{" "}
+        <Link
+          href={"https://shahsaminyasar.vercel.app"}
           target="_blank"
-          rel="noopener noreferrer"
+          className="font-medium"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          SHAH SAMIN YASAR
+        </Link>
+      </span>
+    </main>
   );
 }
