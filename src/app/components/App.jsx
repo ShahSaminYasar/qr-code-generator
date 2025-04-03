@@ -13,6 +13,7 @@ const App = () => {
   const linkInputRef = useRef(null);
   const generatingQRTLRef = useRef(null);
   const flashHistoryRef = useRef(null);
+  const blinderRef = useRef(null);
 
   // States
   const [generatingQRCode, setGeneratingQRCode] = useState(false);
@@ -35,16 +36,31 @@ const App = () => {
       flashHistoryRef.current = gsap.timeline();
     }
 
-    flashHistoryRef.current
-      .set("#animation_history_cover", {
+    if (!blinderRef.current) {
+      blinderRef.current = gsap.timeline();
+    }
+
+    blinderRef.current
+      .set(".blinder", {
         opacity: 1,
         duration: 0,
-        delay: 1.3,
+      })
+      .to(".blinder", {
+        opacity: 0,
+        duration: 0.3,
+        delay: 0.4,
+      });
+
+    flashHistoryRef.current
+      .to("#animation_history_cover", {
+        opacity: 1,
+        duration: 0,
+        delay: 1.5,
       })
       .to("#animation_history_cover", {
         opacity: 0,
         duration: 0.3,
-        delay: 0.7,
+        delay: 1.4,
       });
 
     generatingQRTLRef.current
@@ -147,6 +163,10 @@ const App = () => {
     refreshHistory();
   };
 
+  const flashCurrentValues = () => {
+    blinderRef.current.restart();
+  };
+
   return (
     <main className="w-full min-h-[78vh] bg-slate-100 text-slate-700 font-medium text-sm px-3">
       <div className="max-w-xl mx-auto my-5 rounded-sm border-[1px] border-slate-300 bg-white p-3">
@@ -182,6 +202,9 @@ const App = () => {
               }`}
             />
 
+            {/* Setting Current Data Animation Layer */}
+            <div className="blinder opacity-0 pointer-events-none absolute top-0 left-0 w-full h-full bg-[rgba(255,255,255,0.8)] backdrop-blur-[8px]"></div>
+
             {/* Generating animation layer */}
             <div
               id="animation_generating_container"
@@ -209,9 +232,10 @@ const App = () => {
           </div>
 
           {/* Target Link */}
-          <span className="block text-center text-xs font-medium text-slate-600 mt-2 mb-3">
+          <div className="block text-center text-xs font-medium text-slate-600 mt-2 mb-3 relative">
             {entriedLink}
-          </span>
+            <div className="blinder opacity-0 pointer-events-none absolute top-0 left-0 w-full h-full bg-[rgba(255,255,255,0.3)] backdrop-blur-[3px]"></div>
+          </div>
         </div>
 
         {/* Link Input Form */}
@@ -232,7 +256,7 @@ const App = () => {
           {/* Generate QR Btn */}
           <button
             type="submit"
-            className="whitespace-nowrap px-2 py-1 bg-slate-900 text-slate-100 border-[1px] border-slate-900 rounded-sm text-sm cursor-pointer disabled:grayscale-[60%] disabled:opacity-50 block mx-auto w-full text-center sm:w-fit"
+            className="whitespace-nowrap px-2 py-[5px] sm:py-1 bg-slate-900 text-slate-100 border-[1px] border-slate-900 rounded-sm text-sm cursor-pointer disabled:grayscale-[60%] disabled:opacity-50 block mx-auto w-full text-center sm:w-fit"
             disabled={generatingQRCode}
           >
             {generatingQRCode ? "Generating code..." : "Generate QR Code"}
@@ -249,7 +273,7 @@ const App = () => {
         <div className="flex flex-col w-full max-h-[29vh] overflow-y-auto relative">
           <div
             id="animation_history_cover"
-            className="opacity-100 pointer-events-none absolute top-0 left-0 w-full h-full bg-[rgba(255,255,255,0.7)] backdrop-blur-md"
+            className="opacity-100 pointer-events-none absolute top-0 left-0 w-full h-full bg-[rgba(255,255,255,0.3)] backdrop-blur-[5px]"
           ></div>
           {/* QR Code Rows */}
           {[...qrHistory]?.reverse()?.map((qrCode, index) => (
@@ -261,6 +285,7 @@ const App = () => {
               setQRcodeURL={setQRcodeURL}
               entriedLink={entriedLink}
               removeFromHistory={removeFromHistory}
+              flashCurrentValues={flashCurrentValues}
             />
           ))}
         </div>

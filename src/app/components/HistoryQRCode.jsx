@@ -10,6 +10,7 @@ const HistoryQRCode = ({
   setQRcodeURL,
   entriedLink,
   removeFromHistory,
+  flashCurrentValues,
 }) => {
   const urlObj = new URL(qrCode);
   const qrLink = urlObj.searchParams.get("data");
@@ -36,6 +37,7 @@ const HistoryQRCode = ({
           setQRcodeURL(
             `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrLink}`
           );
+          return flashCurrentValues();
         }}
       >
         {qrLink}
@@ -51,6 +53,7 @@ const HistoryQRCode = ({
           setQRcodeURL(
             `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrLink}`
           );
+          return flashCurrentValues();
         }}
       />
       <Link
